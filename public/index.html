@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NewsPulse - AI-Powered Market Analysis</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Time scale needs a date adapter; use Luxon adapter -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
+</head>
+<body>
+  <div class="app-wrapper">
+    <header class="header">
+      <div class="header-content">
+        <div class="logo-section">
+          <div class="logo-icon">📈</div>
+          <h1>NewsPulse</h1>
+          <span class="tagline">AI-Powered Market Analysis</span>
+        </div>
+      </div>
+    </header>
+    
+    <main class="container">
+      <div class="control-panel">
+        <div class="control-group">
+          <label class="control-label">
+            <span class="label-icon">🪙</span>
+            <span class="label-text">Select Coin</span>
+          </label>
+          <select id="coin" class="select-input">
+            <option value="BTC">BTC (Bitcoin)</option>
+            <option value="ETH">ETH (Ethereum)</option>
+            <option value="SOL">SOL (Solana)</option>
+            <option value="BNB">BNB (BNB)</option>
+            <option value="XRP">XRP (Ripple)</option>
+            <option value="ADA">ADA (Cardano)</option>
+            <option value="DOGE">DOGE (Dogecoin)</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">
+            <span class="label-icon">📅</span>
+            <span class="label-text">Date</span>
+          </label>
+          <input id="date" type="date" class="date-input" />
+        </div>
+        
+        <button id="loadBtn" class="load-button">
+          <span class="button-icon">🚀</span>
+          <span>Analyze</span>
+        </button>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Price Chart & News Sentiment</h2>
+          <div id="meta" class="chart-meta"></div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart" ></canvas>
+          <div id="newsLoading" class="chart-overlay hidden">
+            <div class="loading-spinner"></div>
+            <span id="loadingText">Loading all data...</span>
+          </div>
+        </div>
+        <div id="legend" class="legend"></div>
+      </div>
+
+      <div class="news-section">
+        <h2 class="section-title">
+          <span class="title-icon">📰</span>
+          News Events & Sentiment Analysis
+        </h2>
+        <div id="news-list" class="news-list"></div>
+      </div>
+    </main>
+  </div>
+  <script src="/main.js"></script>
+</body>
+</html>

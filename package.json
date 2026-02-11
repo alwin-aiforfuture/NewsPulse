@@ -1,0 +1,21 @@
+{
+  "name": "rss-llm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "predict": "node index.js --coins=BTC,ETH,SOL",
+    "yesterday": "node index.js --yesterday --coins=BTC,ETH,SOL"
+    ,"ytd": "node index.js --ytd --coins=BTC,ETH,SOL"
+    ,"web": "node src/server.js"
+  },
+  "dependencies": {
+    "@langchain/openai": "^1.2.7",
+    "langchain": "^1.2.21",
+    "rss-parser": "^3.13.0",
+    "zod": "^4.3.6",
+    "dotenv": "^16.4.5"
+    ,"express": "^4.19.2"
+  }
+}
