@@ -79,12 +79,12 @@ async function fetchNewsPoints({ coin, date }) {
     const res = await fetch(`/api/news_points?coin=${encodeURIComponent(coin)}&date=${encodeURIComponent(date)}`);
     if (res.ok) {
       const data = await res.json();
-      return data.points || [];
+      return { points: data.points || [], window: data.window || "" };
     }
   } catch (e) {
     console.error("Failed to fetch news points:", e);
   }
-  return [];
+  return { points: [], window: "" };
 }
 
 async function render() {
@@ -124,10 +124,12 @@ async function render() {
   
   try {
     // Fetch both price data and news data in parallel
-    const [seriesData, newsPoints] = await Promise.all([
+    const [seriesData, newsData] = await Promise.all([
       fetchSeries({ coin: coinInput, date: dateInput }),
       fetchNewsPoints({ coin: coinInput, date: dateInput })
     ]);
+    const newsPoints = newsData.points;
+    const newsWindow = newsData.window;
     
     // Hide loading overlay
     stopLoadingAnimation();
@@ -155,20 +157,49 @@ async function render() {
           const y = yScale.getPixelForValue(d.y);
           ctx.beginPath();
           ctx.arc(x, y, 5, 0, Math.PI * 2);
+          const isPrice = !!(d && d._meta && d._meta.isPriceNews);
           const snt = d && d._meta && d._meta.sentiment;
-          if (snt === "bullish") {
-            ctx.fillStyle = "#00e676"; // vivid green
-            ctx.strokeStyle = "#00c853";
-          } else if (snt === "neutral") {
-            ctx.fillStyle = "#ffd400"; // vivid yellow
-            ctx.strokeStyle = "#ffab00";
-          } else {
-            ctx.fillStyle = "#ff1744"; // vivid red
-            ctx.strokeStyle = "#d50000";
-          }
+  
+            if (snt === "bullish") {
+              ctx.fillStyle = "#00e676"; // vivid green
+              ctx.strokeStyle = "#00c853";
+  
+            } else if (snt === "neutral") {
+              ctx.fillStyle = "#ffd400"; // vivid yellow
+              ctx.strokeStyle = "#ffab00";
+            } else {
+              ctx.fillStyle = "#ff1744"; // vivid red
+              ctx.strokeStyle = "#d50000";
+            }
+              if (isPrice)  {
+                ctx.globalAlpha = 0.5; // Set alpha for price-only news
+              }
           ctx.lineWidth = 2;
           ctx.fill();
           ctx.stroke();
+          // Draw confidence percentage above the dot
+          const meta = d && d._meta ? d._meta : null;
+          const confPct = meta && typeof meta.confidence === 'number' ? Math.round(meta.confidence * 100) : null;
+          if (confPct !== null) {
+            const label = confPct + "%";
+            const chartArea = chart.chartArea;
+            let labelX = x;
+            let labelY = y - 8;
+            // If too close to top, place below the dot
+            if (labelY < chartArea.top + 6) labelY = y + 12;
+            ctx.font = "10px 'Inter', sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            // Outline for readability
+            ctx.strokeStyle = "rgba(19, 24, 41, 0.8)";
+            ctx.lineWidth = 3;
+            ctx.strokeText(label, labelX, labelY);
+            // Fill text
+            ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+            ctx.fillText(label, labelX, labelY);
+          }
+          // Reset alpha for subsequent draws
+          ctx.globalAlpha = 1.0;
           pixels.push({ x, y, d });
         });
         ctx.restore();
@@ -382,7 +413,7 @@ async function render() {
         },
         plugins: {
           legend: { position: "bottom" },
-          title: { display: true, text: `Date: ${dateInput}` },
+          title: { display: true, text: `Date: ${dateInput}${newsWindow ? ` • Timeframe: ${newsWindow}` : ""}` },
           tooltip: {
             callbacks: {
               label: (ctx) => {
@@ -454,6 +485,8 @@ async function render() {
     
     // Set news overlay data on chart instance
     window.__chart.$newsOverlayData = overlayData;
+    // Store timeframe for tooltip display
+    window.__chart.$newsWindow = newsWindow;
     window.__chart.update();
 
     // Setup hover tooltip for overlay points
@@ -669,9 +702,9 @@ async function render() {
     // Render legend below chart (bullish/neutral/bearish)
     const legendEl = document.getElementById("legend");
     const legendItems = [
-      { label: "利好 (Bullish)", fill: "#00e676", stroke: "#00c853" },
-      { label: "中性 (Neutral)", fill: "#ffd400", stroke: "#ffab00" },
-      { label: "利空 (Bearish)", fill: "#ff1744", stroke: "#d50000" },
+      { label: "Bullish", fill: "#00e676", stroke: "#00c853" },
+      { label: "Neutral", fill: "#ffd400", stroke: "#ffab00" },
+      { label: "Bearish", fill: "#ff1744", stroke: "#d50000" },
     ];
     legendEl.innerHTML = "";
     legendItems.forEach((it) => {
@@ -712,10 +745,14 @@ async function render() {
         top.className = "news-top";
         const dot = document.createElement("span");
         dot.className = "news-dot";
-        const c = colorsFor(pt.sentiment);
-        dot.style.backgroundColor = c.fill;
-        dot.style.border = `2px solid ${c.stroke}`;
-        dot.style.boxShadow = `0 0 6px ${c.fill}`;
+        if (pt.isPriceNews) {
+          // Price-only news: white dot in list with 0.5 opacity
+          dot.style.opacity = '0.5';
+        } 
+          const c = colorsFor(pt.sentiment);
+          dot.style.backgroundColor = c.fill;
+          dot.style.border = `2px solid ${c.stroke}`;
+          dot.style.boxShadow = `0 0 6px ${c.fill}`;
         const time = document.createElement("span");
         time.className = "news-time";
         time.textContent = `${formatDate(pt.t)} ${formatTimeAMPM(pt.t)}`;
@@ -735,10 +772,13 @@ async function render() {
         const conf = document.createElement("span");
         conf.className = "news-confidence";
         if (typeof pt.confidence === 'number') conf.textContent = `Confidence: ${Math.round(pt.confidence*100)}%`;
+        const tf = document.createElement("span");
+        tf.className = "news-timeframe";
+        if (pt.timeframe) tf.textContent = `Timeframe: ${pt.timeframe}`;
         const reason = document.createElement("span");
         reason.className = "news-reason";
         reason.textContent = pt.reason || "";
-        bottom.append(conf, reason);
+        bottom.append(conf, tf, reason);
 
         row.append(top, bottom);
         list.appendChild(row);

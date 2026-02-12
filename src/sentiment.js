@@ -13,6 +13,30 @@ function getModel() {
   });
 }
 
+/* const schema = z.array(
+  z.object({
+    ts: z.number(),
+    title: z.string(),
+    link: z.string().default(""),
+    // Think
+    analysis: z.object({
+      category: z.enum(["macro", "regulatory", "technical", "adoption", "whale_movement", "exploit"]),
+      primaryCatalyst: z.string().describe("The core event driving the sentiment"),
+      counterArgument: z.string().describe("Potential reason why this news might fail to move the market"),
+      isContrarianSignal: z.string().describe("Is the news feels like 'forced' optimism or exit liquidity setup"),
+      hvFallingSign: z.string().describe('The "Famous Buyer" Trope? Political Alignment? Extreme Fear?'),
+      crowdedness: z.number().min(0).max(1).describe("How much of a 'consensus' this news represents"),
+      marketStage: z.enum(["capitulation", "denial", "euphoria", "uncertainty"]),
+    }),
+    // Result 
+    impactScore: z.number().min(0).max(1).describe("Estimated market impact strength"),
+    reason: z.string().default("A 'Since X, then Y' statement explaining the sentiment"),
+    sentiment: z.enum(["bullish", "bearish", "neutral"]),
+    confidence: z.number().min(0).max(1).default(0.5),
+    isPriceNews: z.boolean().describe("Whether the news item is directly related to price movement").default(false),
+  })
+); */
+
 const schema = z.array(
   z.object({
     ts: z.number(),
@@ -21,6 +45,7 @@ const schema = z.array(
     sentiment: z.enum(["bullish", "bearish", "neutral"]),
     confidence: z.number().min(0).max(1).optional().default(0.5),
     reason: z.string().optional().default(""),
+    isPriceNews: z.boolean().describe("Whether the news item is directly related to price movement").default(false),
   })
 );
 
@@ -74,6 +99,7 @@ export async function classifyNewsItems(coin, items) {
         sentiment,
         confidence: typeof o.confidence === "number" ? Math.max(0, Math.min(1, o.confidence)) : 0.5,
         reason: String(o.reason || ""),
+        isPriceNews: Boolean(o.isPriceNews),
       };
     });
   } catch (error) {
@@ -85,7 +111,8 @@ export async function classifyNewsItems(coin, items) {
       link: it.link,
       sentiment: "neutral",
       confidence: 0.5,
-      reason: "fallback neutral",
+      reason: "fallback",
+      isPriceNews: false,
     }));
   }
 }

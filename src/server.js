@@ -100,13 +100,15 @@ app.get("/api/news_points", async (req, res) => {
             sentiment: lab ? lab.sentiment : "bearish",
             confidence: lab && typeof lab.confidence === "number" ? lab.confidence : 0.5,
             reason: lab && lab.reason ? lab.reason : "",
+            isPriceNews: lab ? Boolean(lab.isPriceNews) : false,
+            timeframe: lab && typeof lab.timeframe === "string" ? lab.timeframe : "medium_term",
           };
         })
         .sort((a, b) => a.t - b.t)
         .slice(0, 50);
     } catch {
       points = limited
-        .map((it) => ({ t: it.pubDate.getTime(), title: it.title, link: it.link, source: it.source, sentiment: "neutral", confidence: 0.5, reason: "" }))
+        .map((it) => ({ t: it.pubDate.getTime(), title: it.title, link: it.link, source: it.source, sentiment: "neutral", confidence: 0.5, reason: "", isPriceNews: false, timeframe: "medium_term" }))
         .sort((a, b) => a.t - b.t)
         .slice(0, 50);
     }
